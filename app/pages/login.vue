@@ -64,7 +64,7 @@ async function onSubmit() {
           </div>
 
           <h1 class="text-3xl font-semibold tracking-tight">
-            Aplikasi Dashboard admin.
+            Aplikasi Dashboard admin perawatku.
           </h1>
 
           <div class="grid max-w-lg gap-3 sm:grid-cols-2">
