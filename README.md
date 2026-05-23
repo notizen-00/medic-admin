@@ -57,6 +57,20 @@ Production-like run (build + run):
 docker compose --profile prod up --build
 ```
 
+## CI/CD (GitHub Actions)
+
+- CI: `.github/workflows/ci.yml` runs `pnpm install`, `build`, `typecheck`, `lint` on PR/push to `main`.
+- CD: `.github/workflows/cd.yml` builds a Docker image, pushes it to GHCR, then deploys via SSH by running `docker compose -f docker-compose.prod.yml up -d --pull always` on your server.
+
+Required GitHub Secrets (Repository → Settings → Secrets and variables → Actions):
+
+- `SSH_HOST` (e.g. `your-vps-ip-or-domain`)
+- `SSH_USER` (e.g. `root` or `ubuntu`)
+- `SSH_PORT` (optional, default `22`)
+- `SSH_PRIVATE_KEY` (private key for the user above)
+- `DEPLOY_PATH` (folder on server containing `docker-compose.prod.yml` and `.env`)
+- `GHCR_USER` + `GHCR_TOKEN` (optional; only needed if your GHCR package is private; token needs `read:packages`)
+
 ## Production
 
 Build the application for production:

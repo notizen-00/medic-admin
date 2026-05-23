@@ -23,6 +23,14 @@ RUN pnpm build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+COPY --from=builder /app/.output /app/.output
+EXPOSE 3000
+CMD ["node",".output/server/index.mjs"]
+
+# Runtime installer (for docker compose up: install -> build -> run via pm2)
+FROM node:20-alpine AS compose-runner
+WORKDIR /app
+ENV NODE_ENV=production
 COPY . .
 COPY docker/entrypoint-prod.sh /entrypoint-prod.sh
 RUN chmod +x /entrypoint-prod.sh

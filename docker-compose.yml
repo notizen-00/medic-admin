@@ -2,7 +2,7 @@ services:
   nuxt:
     build:
       context: .
-      target: runner
+      target: compose-runner
     ports:
       - "3000:3000"
     env_file:
