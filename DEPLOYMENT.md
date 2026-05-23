@@ -29,7 +29,7 @@ Repository → Settings → Secrets and variables → Actions → New repository
 - `SSH_HOST` (server IP/domain)
 - `SSH_USER` (e.g. `root`/`ubuntu`)
 - `SSH_PORT` (optional, default `22`)
-- `SSH_PRIVATE_KEY` (private key that can SSH into the server)
+- `SSH_PASSWORD` (SSH password for the user above)
 - `DEPLOY_PATH` (e.g. `/opt/medic-admin`)
 
 Optional (only if your GHCR package is private):

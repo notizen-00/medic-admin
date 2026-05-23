@@ -67,7 +67,7 @@ Required GitHub Secrets (Repository → Settings → Secrets and variables → A
 - `SSH_HOST` (e.g. `your-vps-ip-or-domain`)
 - `SSH_USER` (e.g. `root` or `ubuntu`)
 - `SSH_PORT` (optional, default `22`)
-- `SSH_PRIVATE_KEY` (private key for the user above)
+- `SSH_PASSWORD` (SSH password for the user above)
 - `DEPLOY_PATH` (folder on server containing `docker-compose.prod.yml` and `.env`)
 - `GHCR_USER` + `GHCR_TOKEN` (optional; only needed if your GHCR package is private; token needs `read:packages`)
 
