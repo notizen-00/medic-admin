@@ -11,6 +11,7 @@ export function useApiFetch<T>(
 
   return $fetch<T>(path, {
     baseURL,
+    credentials: 'omit',
     ...options,
     headers: {
       ...(options.headers || {}),

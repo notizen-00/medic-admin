@@ -50,6 +50,14 @@ const links = [
       },
     },
     {
+      label: "Services",
+      icon: "i-lucide-list-tree",
+      to: "/services",
+      onSelect: () => {
+        open.value = false;
+      },
+    },
+    {
       label: "Partners",
       icon: "i-lucide-stethoscope",
       to: "/partners",

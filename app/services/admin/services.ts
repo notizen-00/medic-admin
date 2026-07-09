@@ -1,0 +1,145 @@
+import type { ServiceCategory } from './services-categories'
+
+export type ServiceType =
+  | 'consultation'
+  | 'procedure'
+  | 'caregiver'
+  | 'homecare'
+  | 'dokter_homecare'
+  | 'perawat_homecare'
+  | 'bidan_homecare'
+  | 'konsultasi_tindakan'
+  | string
+
+export type ServiceMode = 'chat' | 'voice' | 'video' | 'visit'
+
+export type Service = {
+  id: number
+  service_code?: string | null
+  service_category_id?: number | null
+  category_id?: number | null
+  category?: ServiceCategory | null
+  name: string
+  slug?: string | null
+  description?: string | null
+  service_type?: ServiceType | null
+  service_mode?: ServiceMode | null
+  base_price?: number | null
+  price?: number | null
+  duration_minutes?: number | null
+  icon?: string | null
+  requires_address?: boolean | null
+  requires_schedule?: boolean | null
+  requires_matchmaking?: boolean | null
+  is_homecare?: boolean | null
+  sort_order?: number | null
+  is_active: boolean
+  image?: string | null
+  image_url?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export type CreateServicePayload = {
+  remove_image: boolean
+  service_code?: string
+  service_category_id?: number
+  category_id?: number
+  name: string
+  slug?: string
+  description?: string
+  service_type?: ServiceType
+  service_mode?: ServiceMode
+  category?: string
+  base_price?: number
+  price?: number
+  duration_minutes?: number
+  icon?: string
+  requires_address?: boolean
+  requires_schedule?: boolean
+  requires_matchmaking?: boolean
+  is_homecare?: boolean
+  sort_order?: number
+  is_active?: boolean
+  image?: File | null
+  image_path?: string
+}
+
+export type UpdateServicePayload = Partial<CreateServicePayload>
+
+export type ApiListResponse<T> = {
+  message: string
+  data: T
+}
+
+export type ListServicesQuery = {
+  search?: string
+  service_category_id?: number
+  category_id?: number
+  service_type?: ServiceType
+  is_active?: boolean
+  page?: number
+  per_page?: number
+}
+
+export async function listServices(query: ListServicesQuery = {}) {
+  return await useApiFetch<ApiListResponse<Service[]>>('/admin/services', {
+    query
+  })
+}
+
+export async function getService(id: number | string) {
+  return await useApiFetch<{ message: string; data: Service }>(`/admin/services/${id}`)
+}
+
+function buildServiceFormData(payload: CreateServicePayload | UpdateServicePayload) {
+  const formData = new FormData()
+
+  for (const [key, value] of Object.entries(payload)) {
+    if (value === undefined || value === null) continue
+
+    if (key === 'image') {
+      if (value instanceof File) formData.append('image', value)
+      continue
+    }
+
+    if (typeof value === 'boolean') {
+      formData.append(key, value ? '1' : '0')
+      continue
+    }
+
+    formData.append(key, String(value))
+  }
+
+  return formData
+}
+
+export async function createService(payload: CreateServicePayload) {
+  const useMultipart = !!payload.image
+
+  return await useApiFetch<{ message: string; data: Service }>('/admin/services', {
+    method: 'POST',
+    body: useMultipart ? buildServiceFormData(payload) : payload
+  })
+}
+
+export async function updateService(id: number | string, payload: UpdateServicePayload) {
+  const useMultipart = !!payload.image
+
+  return await useApiFetch<{ message: string; data: Service }>(`/admin/services/${id}`, {
+    method: 'PATCH',
+    body: useMultipart ? buildServiceFormData(payload) : payload
+  })
+}
+
+export async function deleteService(id: number | string) {
+  return await useApiFetch<{ message: string }>(`/admin/services/${id}`, {
+    method: 'DELETE'
+  })
+}
+
+export async function toggleServiceStatus(id: number | string) {
+  return await useApiFetch<{ message: string; data: Service }>(`/admin/services/${id}/toggle-status`, {
+    method: 'PATCH'
+  })
+}

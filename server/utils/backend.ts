@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3'
-import { createError, getCookie, getHeader, getMethod, getQuery, readBody } from 'h3'
+import { createError, getCookie, getHeader, getMethod, getQuery, readBody, readRawBody } from 'h3'
 
 function joinUrl(base: string, path: string) {
   return `${base.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
@@ -30,7 +30,30 @@ export async function backendRequest<T>(
   const cookieToken = getCookie(event, 'auth.token')
   const authorization = headerAuthorization || (cookieToken ? (cookieToken.includes(' ') ? cookieToken : `Bearer ${cookieToken}`) : undefined)
 
-  const body = init.body ?? ((method === 'GET' || method === 'HEAD') ? undefined : await readBody(event).catch(() => undefined))
+  const contentType = getHeader(event, 'content-type') || ''
+  const isMultipart = contentType.toLowerCase().includes('multipart/form-data')
+
+  let body: any
+  const headers: Record<string, string> = {}
+
+  if (init.body !== undefined) {
+    body = init.body
+  }
+  else if (method === 'GET' || method === 'HEAD') {
+    body = undefined
+  }
+  else if (isMultipart) {
+    // Forward raw multipart (incl. uploaded files) with its original boundary
+    const raw = await readRawBody(event).catch(() => undefined)
+    if (raw) {
+      body = raw
+      headers['content-type'] = contentType
+    }
+  }
+  else {
+    body = await readBody(event).catch(() => undefined)
+  }
+
   const query = init.query ?? getQuery(event)
 
   return await $fetch<T>(url, {
@@ -38,6 +61,7 @@ export async function backendRequest<T>(
     query,
     body,
     headers: {
+      ...headers,
       ...(authorization ? { Authorization: authorization } : {})
     }
   })
