@@ -544,6 +544,8 @@ GET /api/admin/apotiks
 
 ## 18. Reports (`reports`)
 
+Detail kontrak response untuk frontend laporan ada di [`README_BACKEND_REPORTS.md`](README_BACKEND_REPORTS.md). Backend sebaiknya mengikuti dokumen tersebut agar modul laporan admin tidak error saat data kosong atau field belum lengkap.
+
 ### Laporan Orders
 
 ```

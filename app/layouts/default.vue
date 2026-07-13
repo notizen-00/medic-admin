@@ -6,80 +6,95 @@ const toast = useToast();
 
 const open = ref(false);
 
+function closeSidebar() {
+  open.value = false;
+}
+
 const links = [
   [
     {
       label: "Home",
       icon: "i-lucide-house",
       to: "/",
-      onSelect: () => {
-        open.value = false;
-      },
+      onSelect: closeSidebar,
     },
     {
-      label: "Inbox",
-      icon: "i-lucide-inbox",
-      to: "/inbox",
-      badge: "4",
-      onSelect: () => {
-        open.value = false;
-      },
+      label: "Master Data",
+      icon: "i-lucide-database",
+      defaultOpen: true,
+      type: "trigger",
+      children: [
+        {
+          label: "Patients",
+          icon: "i-lucide-users",
+          to: "/patients",
+          onSelect: closeSidebar,
+        },
+        {
+          label: "Partners",
+          icon: "i-lucide-stethoscope",
+          to: "/partners",
+          onSelect: closeSidebar,
+        },
+        {
+          label: "Services",
+          icon: "i-lucide-list-tree",
+          to: "/services",
+          onSelect: closeSidebar,
+        },
+        {
+          label: "Service Applications",
+          icon: "i-lucide-badge-check",
+          to: "/service-applications",
+          onSelect: closeSidebar,
+        },
+      ],
     },
     {
-      label: "Patients",
-      icon: "i-lucide-users",
-      to: "/patients",
-      onSelect: () => {
-        open.value = false;
-      },
+      label: "Transaksi",
+      icon: "i-lucide-receipt-text",
+      defaultOpen: true,
+      type: "trigger",
+      children: [
+        {
+          label: "Orders",
+          icon: "i-lucide-shopping-bag",
+          to: "/orders",
+          onSelect: closeSidebar,
+        },
+        {
+          label: "Consultations",
+          icon: "i-lucide-message-square",
+          to: "/consultations",
+          onSelect: closeSidebar,
+        },
+        {
+          label: "Service Bookings",
+          icon: "i-lucide-calendar-check",
+          to: "/service-bookings",
+          onSelect: closeSidebar,
+        },
+      ],
     },
     {
-      label: "Orders",
-      icon: "i-lucide-shopping-bag",
-      to: "/orders",
-      onSelect: () => {
-        open.value = false;
-      },
-    },
-    {
-      label: "Consultations",
-      icon: "i-lucide-message-square",
-      to: "/consultations",
-      onSelect: () => {
-        open.value = false;
-      },
-    },
-    {
-      label: "Services",
-      icon: "i-lucide-list-tree",
-      to: "/services",
-      onSelect: () => {
-        open.value = false;
-      },
-    },
-    {
-      label: "Partners",
-      icon: "i-lucide-stethoscope",
-      to: "/partners",
-      onSelect: () => {
-        open.value = false;
-      },
-    },
-    {
-      label: "Service Applications",
-      icon: "i-lucide-badge-check",
-      to: "/service-applications",
-      onSelect: () => {
-        open.value = false;
-      },
-    },
-    {
-      label: "Promo Codes",
-      icon: "i-lucide-ticket",
-      to: "/promo-codes",
-      onSelect: () => {
-        open.value = false;
-      },
+      label: "Laporan",
+      icon: "i-lucide-chart-no-axes-combined",
+      type: "trigger",
+      children: [
+        {
+          label: "Laporan Keuangan",
+          icon: "i-lucide-chart-no-axes-combined",
+          to: "/reports",
+          onSelect: closeSidebar,
+        },
+        {
+          label: "Inbox",
+          icon: "i-lucide-inbox",
+          to: "/inbox",
+          badge: "4",
+          onSelect: closeSidebar,
+        },
+      ],
     },
     {
       label: "Settings",
@@ -92,37 +107,39 @@ const links = [
           label: "General",
           to: "/settings",
           exact: true,
-          onSelect: () => {
-            open.value = false;
-          },
+          onSelect: closeSidebar,
         },
         {
           label: "Members",
           to: "/settings/members",
-          onSelect: () => {
-            open.value = false;
-          },
+          onSelect: closeSidebar,
+        },
+        {
+          label: "Promo Codes",
+          to: "/promo-codes",
+          icon: "i-lucide-ticket",
+          onSelect: closeSidebar,
+        },
+        {
+          label: "Service Markup",
+          to: "/service-markup-setting",
+          icon: "i-lucide-badge-percent",
+          onSelect: closeSidebar,
         },
         {
           label: "Booking Fees",
           to: "/settings/service-booking-fees",
-          onSelect: () => {
-            open.value = false;
-          },
+          onSelect: closeSidebar,
         },
         {
           label: "Notifications",
           to: "/settings/notifications",
-          onSelect: () => {
-            open.value = false;
-          },
+          onSelect: closeSidebar,
         },
         {
           label: "Security",
           to: "/settings/security",
-          onSelect: () => {
-            open.value = false;
-          },
+          onSelect: closeSidebar,
         },
       ],
     },
@@ -143,11 +160,18 @@ const links = [
   ],
 ] satisfies NavigationMenuItem[][];
 
+function flattenItems(items: NavigationMenuItem[]): NavigationMenuItem[] {
+  return items.flatMap((item) => [
+    item,
+    ...flattenItems(item.children || []),
+  ]);
+}
+
 const groups = computed(() => [
   {
     id: "links",
     label: "Go to",
-    items: links.flat(),
+    items: links.flatMap((group) => flattenItems(group)),
   },
   {
     id: "code",

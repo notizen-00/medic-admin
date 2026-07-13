@@ -1,9 +1,15 @@
 <script setup lang="ts">
+import type { TableColumn } from "@nuxt/ui";
+import { listConsultations } from "~/services/admin/consultations";
+import { getUserBalance, getUserBalanceHistory } from "~/services/admin/reports";
+import { listServiceBookings } from "~/services/admin/service-bookings";
+import { normalizeLaravelPaginated } from "~/services/shared/pagination";
 import { getUser } from "~/services/shared/users";
 
 const route = useRoute();
 const toast = useToast();
-const config = useRuntimeConfig();
+
+const UBadge = resolveComponent("UBadge");
 
 const id = computed(() => String(route.params.id || ""));
 
@@ -14,6 +20,30 @@ const { data, pending, error, refresh } = await useAsyncData(
     return res.data;
   },
   { watch: [id] },
+);
+
+const { data: consultations, pending: consultationsPending, refresh: refreshConsultations } = await useAsyncData(
+  () => `partner-consultations:${id.value}`,
+  async () => normalizeLaravelPaginated<any>((await listConsultations({ partner_user_id: Number(id.value), per_page: 5 })).data).items,
+  { default: () => [], watch: [id] },
+);
+
+const { data: bookings, pending: bookingsPending, refresh: refreshBookings } = await useAsyncData(
+  () => `partner-bookings:${id.value}`,
+  async () => normalizeLaravelPaginated<any>((await listServiceBookings({ assigned_partner_user_id: Number(id.value), per_page: 5 })).data).items,
+  { default: () => [], watch: [id] },
+);
+
+const { data: balance, pending: balancePending, refresh: refreshBalance } = await useAsyncData(
+  () => `partner-balance:${id.value}`,
+  async () => (await getUserBalance(id.value)).data,
+  { default: () => null, watch: [id] },
+);
+
+const { data: balanceHistory, pending: balanceHistoryPending, refresh: refreshBalanceHistory } = await useAsyncData(
+  () => `partner-balance-history:${id.value}`,
+  async () => normalizeLaravelPaginated<any>((await getUserBalanceHistory(id.value, { per_page: 5 })).data).items,
+  { default: () => [], watch: [id] },
 );
 
 const strPhotoOk = ref(true)
@@ -60,12 +90,101 @@ function professionLabel(p?: string) {
   return "-";
 }
 
+const balanceAmount = computed(() =>
+  balance.value?.balance ?? balance.value?.amount ?? balance.value?.saldo ?? balance.value?.data?.balance ?? 0
+);
+
+const historyLoading = computed(() =>
+  consultationsPending.value || bookingsPending.value || balanceHistoryPending.value
+);
+
+function statusColor(status?: string | null) {
+  if (["completed", "delivered", "paid", "success", "verified"].includes(String(status))) return "success" as const;
+  if (["cancelled", "failed", "rejected"].includes(String(status))) return "error" as const;
+  if (["pending", "processed", "draft"].includes(String(status))) return "warning" as const;
+  if (["confirmed", "ongoing", "assigned", "shipped"].includes(String(status))) return "info" as const;
+  return "neutral" as const;
+}
+
+function bookingCode(item: any) {
+  return item.booking_code || item.service_booking_code || `#${item.id}`;
+}
+
+async function refreshAll() {
+  await Promise.all([
+    refresh(),
+    refreshConsultations(),
+    refreshBookings(),
+    refreshBalance(),
+    refreshBalanceHistory(),
+  ]);
+}
+
 async function copyId() {
   const value = String(data.value?.id || "");
   if (!value) return;
   await globalThis.navigator?.clipboard?.writeText(value);
   toast.add({ title: "Copied", description: "Partner ID disalin." });
 }
+
+const consultationColumns: TableColumn<any>[] = [
+  {
+    id: "consultation",
+    header: "Konsultasi",
+    cell: ({ row }) =>
+      h("div", { class: "space-y-0.5" }, [
+        h("p", { class: "font-medium text-highlighted" }, row.original.consultation_code || `#${row.original.id}`),
+        h("p", { class: "text-xs text-dimmed" }, formatDateTime(row.original.created_at)),
+      ]),
+  },
+  { accessorKey: "service_type", header: "Service", cell: ({ row }) => row.original.service_type || "-" },
+  { id: "patient", header: "Patient", cell: ({ row }) => row.original.patient?.name || "-" },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => h(UBadge, { variant: "subtle", color: statusColor(row.original.status) }, () => row.original.status || "-"),
+  },
+];
+
+const bookingColumns: TableColumn<any>[] = [
+  {
+    id: "booking",
+    header: "Booking",
+    cell: ({ row }) =>
+      h("div", { class: "space-y-0.5" }, [
+        h("p", { class: "font-medium text-highlighted" }, bookingCode(row.original)),
+        h("p", { class: "text-xs text-dimmed" }, formatDateTime(row.original.scheduled_at || row.original.booking_date || row.original.created_at)),
+      ]),
+  },
+  { id: "service", header: "Service", cell: ({ row }) => row.original.service?.name || "-" },
+  { id: "patient", header: "Patient", cell: ({ row }) => row.original.patient?.name || "-" },
+  { id: "amount", header: "Total", cell: ({ row }) => formatCurrencyIDR(row.original.total_amount ?? row.original.final_price) },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => h(UBadge, { variant: "subtle", color: statusColor(row.original.status) }, () => row.original.status || "-"),
+  },
+];
+
+const balanceHistoryColumns: TableColumn<any>[] = [
+  {
+    id: "transaction",
+    header: "Transaksi Saldo",
+    cell: ({ row }) =>
+      h("div", { class: "space-y-0.5" }, [
+        h("p", { class: "font-medium text-highlighted" }, row.original.transaction_code || row.original.reference || `#${row.original.id}`),
+        h("p", { class: "text-xs text-dimmed" }, row.original.description || row.original.notes || ""),
+      ]),
+  },
+  { id: "type", header: "Type", cell: ({ row }) => row.original.type || row.original.transaction_type || "-" },
+  { id: "amount", header: "Amount", cell: ({ row }) => formatCurrencyIDR(row.original.amount ?? row.original.value) },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => h(UBadge, { variant: "subtle", color: statusColor(row.original.status) }, () => row.original.status || "-"),
+  },
+  { id: "date", header: "Tanggal", cell: ({ row }) => formatDateTime(row.original.created_at || row.original.transaction_date) },
+];
 </script>
 
 <template>
@@ -97,8 +216,8 @@ async function copyId() {
             icon="i-lucide-refresh-cw"
             color="neutral"
             variant="outline"
-            :loading="pending"
-            @click="refresh()"
+            :loading="pending || historyLoading"
+            @click="refreshAll"
           >
             Refresh
           </UButton>
@@ -153,10 +272,20 @@ async function copyId() {
 
         <UCard>
           <template #header>
-            <div class="text-sm text-dimmed">Status</div>
+            <div class="text-sm text-dimmed">Status & Saldo</div>
           </template>
 
-          <div class="space-y-3">
+          <div class="space-y-4">
+            <div>
+              <div class="text-xs text-dimmed">Balance</div>
+              <div class="text-2xl font-semibold text-highlighted">
+                {{ formatCurrencyIDR(balanceAmount) }}
+              </div>
+              <div class="text-xs text-muted">
+                {{ balancePending ? "Memuat saldo..." : "Saldo mitra" }}
+              </div>
+            </div>
+
             <div class="flex items-center justify-between gap-3">
               <div class="text-sm">Profesi</div>
               <UBadge variant="subtle" color="neutral">
@@ -243,6 +372,27 @@ async function copyId() {
               </div>
             </div>
           </div>
+        </UCard>
+
+        <UCard class="lg:col-span-3">
+          <template #header>
+            <div class="font-medium">Riwayat Service Booking</div>
+          </template>
+          <UTable :data="bookings || []" :columns="bookingColumns" :loading="bookingsPending" />
+        </UCard>
+
+        <UCard class="lg:col-span-3">
+          <template #header>
+            <div class="font-medium">Riwayat Konsultasi</div>
+          </template>
+          <UTable :data="consultations || []" :columns="consultationColumns" :loading="consultationsPending" />
+        </UCard>
+
+        <UCard class="lg:col-span-3">
+          <template #header>
+            <div class="font-medium">Riwayat Saldo</div>
+          </template>
+          <UTable :data="balanceHistory || []" :columns="balanceHistoryColumns" :loading="balanceHistoryPending" />
         </UCard>
       </div>
 
