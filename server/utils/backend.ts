@@ -44,7 +44,9 @@ export async function backendRequest<T>(
   }
   else if (isMultipart) {
     // Forward raw multipart (incl. uploaded files) with its original boundary
-    const raw = await readRawBody(event).catch(() => undefined)
+    // `false` is required here so H3 returns a Buffer. Reading multipart as
+    // UTF-8 text corrupts binary files and makes Laravel's MIME detection fail.
+    const raw = await readRawBody(event, false).catch(() => undefined)
     if (raw) {
       body = raw
       headers['content-type'] = contentType

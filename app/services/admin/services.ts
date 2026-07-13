@@ -83,13 +83,13 @@ export type ListServicesQuery = {
 }
 
 export async function listServices(query: ListServicesQuery = {}) {
-  return await useApiFetch<ApiListResponse<Service[]>>('/admin/services', {
+  return await $fetch<ApiListResponse<Service[]>>('/api/admin/services', {
     query
   })
 }
 
 export async function getService(id: number | string) {
-  return await useApiFetch<{ message: string; data: Service }>(`/admin/services/${id}`)
+  return await $fetch<{ message: string; data: Service }>(`/api/admin/services/${id}`)
 }
 
 function buildServiceFormData(payload: CreateServicePayload | UpdateServicePayload) {
@@ -117,7 +117,7 @@ function buildServiceFormData(payload: CreateServicePayload | UpdateServicePaylo
 export async function createService(payload: CreateServicePayload) {
   const useMultipart = !!payload.image
 
-  return await useApiFetch<{ message: string; data: Service }>('/admin/services', {
+  return await $fetch<{ message: string; data: Service }>('/api/admin/services', {
     method: 'POST',
     body: useMultipart ? buildServiceFormData(payload) : payload
   })
@@ -126,20 +126,20 @@ export async function createService(payload: CreateServicePayload) {
 export async function updateService(id: number | string, payload: UpdateServicePayload) {
   const useMultipart = !!payload.image
 
-  return await useApiFetch<{ message: string; data: Service }>(`/admin/services/${id}`, {
+  return await $fetch<{ message: string; data: Service }>(`/api/admin/services/${id}`, {
     method: 'PATCH',
     body: useMultipart ? buildServiceFormData(payload) : payload
   })
 }
 
 export async function deleteService(id: number | string) {
-  return await useApiFetch<{ message: string }>(`/admin/services/${id}`, {
+  return await $fetch<{ message: string }>(`/api/admin/services/${id}`, {
     method: 'DELETE'
   })
 }
 
 export async function toggleServiceStatus(id: number | string) {
-  return await useApiFetch<{ message: string; data: Service }>(`/admin/services/${id}/toggle-status`, {
+  return await $fetch<{ message: string; data: Service }>(`/api/admin/services/${id}/toggle-status`, {
     method: 'PATCH'
   })
 }

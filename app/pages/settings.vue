@@ -11,6 +11,10 @@ const links = [[{
   icon: 'i-lucide-users',
   to: '/settings/members'
 }, {
+  label: 'Booking Fees',
+  icon: 'i-lucide-hand-coins',
+  to: '/settings/service-booking-fees'
+}, {
   label: 'Notifications',
   icon: 'i-lucide-bell',
   to: '/settings/notifications'

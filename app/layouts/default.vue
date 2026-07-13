@@ -104,6 +104,13 @@ const links = [
           },
         },
         {
+          label: "Booking Fees",
+          to: "/settings/service-booking-fees",
+          onSelect: () => {
+            open.value = false;
+          },
+        },
+        {
           label: "Notifications",
           to: "/settings/notifications",
           onSelect: () => {
