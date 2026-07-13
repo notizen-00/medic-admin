@@ -1,5 +1,7 @@
 import type { ServiceCategory } from './services-categories'
 
+export const SERVICE_IMAGE_NOT_AVAILABLE = 'Image not available'
+
 export type ServiceType =
   | 'consultation'
   | 'procedure'
@@ -82,14 +84,55 @@ export type ListServicesQuery = {
   per_page?: number
 }
 
+function hasServiceImage(value?: string | null) {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+export function normalizeService(service: Service): Service {
+  if (hasServiceImage(service.image) || hasServiceImage(service.image_url)) {
+    return service
+  }
+
+  return {
+    ...service,
+    image: SERVICE_IMAGE_NOT_AVAILABLE
+  }
+}
+
+function normalizeServicePayload<T>(payload: T): T {
+  if (Array.isArray(payload)) {
+    return payload.map(item => normalizeService(item as Service)) as T
+  }
+
+  if (payload && typeof payload === 'object' && Array.isArray((payload as any).data)) {
+    return {
+      ...(payload as any),
+      data: (payload as any).data.map((item: Service) => normalizeService(item))
+    }
+  }
+
+  return payload
+}
+
+function normalizeServiceResponse<T extends { data: any }>(response: T): T {
+  return {
+    ...response,
+    data: normalizeServicePayload(response.data)
+  }
+}
+
 export async function listServices(query: ListServicesQuery = {}) {
-  return await $fetch<ApiListResponse<Service[]>>('/api/admin/services', {
+  const response = await $fetch<ApiListResponse<Service[]>>('/api/admin/services', {
     query
   })
+
+  return normalizeServiceResponse(response)
 }
 
 export async function getService(id: number | string) {
-  return await $fetch<{ message: string; data: Service }>(`/api/admin/services/${id}`)
+  const response = await $fetch<{ message: string; data: Service }>(`/api/admin/services/${id}`)
+
+  return normalizeServiceResponse(response)
 }
 
 function buildServiceFormData(payload: CreateServicePayload | UpdateServicePayload) {
@@ -117,19 +160,23 @@ function buildServiceFormData(payload: CreateServicePayload | UpdateServicePaylo
 export async function createService(payload: CreateServicePayload) {
   const useMultipart = !!payload.image
 
-  return await $fetch<{ message: string; data: Service }>('/api/admin/services', {
+  const response = await $fetch<{ message: string; data: Service }>('/api/admin/services', {
     method: 'POST',
     body: useMultipart ? buildServiceFormData(payload) : payload
   })
+
+  return normalizeServiceResponse(response)
 }
 
 export async function updateService(id: number | string, payload: UpdateServicePayload) {
   const useMultipart = !!payload.image
 
-  return await $fetch<{ message: string; data: Service }>(`/api/admin/services/${id}`, {
+  const response = await $fetch<{ message: string; data: Service }>(`/api/admin/services/${id}`, {
     method: 'PATCH',
     body: useMultipart ? buildServiceFormData(payload) : payload
   })
+
+  return normalizeServiceResponse(response)
 }
 
 export async function deleteService(id: number | string) {
@@ -139,7 +186,9 @@ export async function deleteService(id: number | string) {
 }
 
 export async function toggleServiceStatus(id: number | string) {
-  return await $fetch<{ message: string; data: Service }>(`/api/admin/services/${id}/toggle-status`, {
+  const response = await $fetch<{ message: string; data: Service }>(`/api/admin/services/${id}/toggle-status`, {
     method: 'PATCH'
   })
+
+  return normalizeServiceResponse(response)
 }

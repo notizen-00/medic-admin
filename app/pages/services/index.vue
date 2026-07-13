@@ -557,6 +557,29 @@ const categoryColumns: TableColumn<ServiceCategory>[] = [
 
 const serviceColumns: TableColumn<Service>[] = [
   {
+    accessorKey: "image",
+    header: "Image",
+    cell: ({ row }) => {
+      const imageUrl = row.original.image_url || "";
+
+      return imageUrl
+        ? h("img", {
+            src: imageUrl,
+            alt: row.original.name,
+            class:
+              "h-12 w-12 shrink-0 rounded-md border border-default object-cover",
+          })
+        : h(
+            "div",
+            {
+              class:
+                "flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-default bg-elevated/50",
+            },
+            h("i", { class: "i-lucide-image-off text-lg text-muted" }),
+          );
+    },
+  },
+  {
     accessorKey: "name",
     header: "Service",
     cell: ({ row }) =>
